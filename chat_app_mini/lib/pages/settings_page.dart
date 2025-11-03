@@ -12,7 +12,7 @@ class SettingsPage extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: Text(
           "Settings",

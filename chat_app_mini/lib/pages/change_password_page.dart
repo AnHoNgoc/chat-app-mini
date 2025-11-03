@@ -1,6 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../components/my_button.dart';
 import '../components/my_text_field.dart';
 import '../services/auth_service.dart';
@@ -15,10 +14,9 @@ class ChangePasswordPage extends StatefulWidget {
 }
 
 class _ChangePasswordPageState extends State<ChangePasswordPage> {
-
   final _formKey = GlobalKey<FormState>();
-
   final authService = AuthService();
+
   final TextEditingController _oldPasswordController = TextEditingController();
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmNewPasswordController = TextEditingController();
@@ -27,19 +25,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   void _changePassword() async {
     if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true); // Bắt đầu loading
+      setState(() => _isLoading = true);
 
-      final authService = AuthService();
       String? result = await authService.changePassword(
-          oldPassword: _oldPasswordController.text.trim(),
-          newPassword: _newPasswordController.text.trim()
+        oldPassword: _oldPasswordController.text.trim(),
+        newPassword: _newPasswordController.text.trim(),
       );
 
-      setState(() => _isLoading = false); // Kết thúc loading
+      setState(() => _isLoading = false);
 
       if (result == null) {
         showAppSnackBar(context, "Password changed successfully!", Colors.green);
-        Navigator.pop(context); // quay về Login
+        Navigator.pop(context);
       } else {
         showAppSnackBar(context, result, Colors.red);
       }
@@ -57,9 +54,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        title: Text("Change password"),
+        title: Text(
+          "Change password",
+          style: TextStyle(fontSize: 18.sp),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.grey,
@@ -67,58 +67,55 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       ),
       body: Center(
         child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 25.w),
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.message,
-                  size: 60,
+                  size: 60.r, // responsive
                   color: Theme.of(context).colorScheme.primary,
                 ),
-                const SizedBox(height: 50),
+                SizedBox(height: 50.h),
                 Text(
                   "For your security, please set a new password",
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 25),
+                SizedBox(height: 25.h),
                 MyTextField(
                   hintText: "Old Password",
                   obscureText: true,
                   controller: _oldPasswordController,
-                  validator: AppValidator.validatePassword
+                  validator: AppValidator.validatePassword,
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
                 MyTextField(
                   hintText: "New Password",
                   obscureText: true,
                   controller: _newPasswordController,
-                  validator: (value) => AppValidator.validateNewPassword(
-                      value,
-                      _oldPasswordController.text),
+                  validator: (value) =>
+                      AppValidator.validateNewPassword(value, _oldPasswordController.text),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.h),
                 MyTextField(
                   hintText: "Confirm New Password",
                   obscureText: true,
                   controller: _confirmNewPasswordController,
-                  validator: (value) => AppValidator.validateConfirmPassword(
-                      value,
-                      _newPasswordController.text
-                  ),
+                  validator: (value) =>
+                      AppValidator.validateConfirmPassword(value, _newPasswordController.text),
                 ),
-                const SizedBox(height: 25),
+                SizedBox(height: 25.h),
                 MyButton(
                   text: "Change Password",
                   onTap: _changePassword,
                   isLoading: _isLoading,
                 ),
-                const SizedBox(height: 25),
+                SizedBox(height: 25.h),
               ],
             ),
           ),

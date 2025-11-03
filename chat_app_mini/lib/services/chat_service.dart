@@ -1,8 +1,9 @@
-import 'package:chat_app_mini/model/Message.dart';
+import 'package:chat_app_mini/model/message.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatService {
+
   final FirebaseFirestore _fireStore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 

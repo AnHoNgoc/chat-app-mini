@@ -21,7 +21,7 @@ class CustomMessage extends StatelessWidget {
         borderRadius: BorderRadius.circular(8.r), // responsive radius
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 6.r,
             offset: Offset(0, 3.h),
           )
