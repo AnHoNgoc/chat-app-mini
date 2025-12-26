@@ -26,7 +26,7 @@ class SettingsPage extends StatelessWidget {
       body: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.secondary,
-          borderRadius: BorderRadius.circular(12.r), // responsive radius
+          borderRadius: BorderRadius.circular(12.r),
         ),
         margin: EdgeInsets.all(25.w),
         padding: EdgeInsets.all(16.w),

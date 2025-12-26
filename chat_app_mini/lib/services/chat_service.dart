@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatService {
-
   final FirebaseFirestore _fireStore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // ===================== USERS =====================
   Stream<List<Map<String, dynamic>>> getUsersStream() {
     return _fireStore.collection("users").snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
@@ -17,33 +17,45 @@ class ChatService {
     });
   }
 
-  Future<void> sendMessage(String receiverId, message) async {
-    final String currentUserId = _auth.currentUser!.uid;
-    final String currentUserEmail = _auth.currentUser!.email!;
-    final Timestamp timestamp = Timestamp.now();
+  // ===================== SEND MESSAGE =====================
+  Future<void> sendMessage(String receiverId, String message) async {
+    try {
+      final currentUser = _auth.currentUser;
+      if (currentUser == null) {
+        throw Exception("User not authenticated");
+      }
 
-    Message newMessage = Message(
-        senderId: currentUserId,
-        senderEmail: currentUserEmail,
+      final Timestamp timestamp = Timestamp.now();
+
+      Message newMessage = Message(
+        senderId: currentUser.uid,
+        senderEmail: currentUser.email ?? '',
         receiverId: receiverId,
         message: message,
-        timestamp: timestamp
-    );
+        timestamp: timestamp,
+      );
 
-    List<String> ids = [currentUserId, receiverId];
-    ids.sort();
-    String chatRoomId = ids.join('_');
+      List<String> ids = [currentUser.uid, receiverId]..sort();
+      String chatRoomId = ids.join('_');
 
-    await _fireStore
-      .collection("chat_rooms")
-      .doc(chatRoomId)
-      .collection("message")
-      .add(newMessage.toMap());
+      await _fireStore
+          .collection("chat_rooms")
+          .doc(chatRoomId)
+          .collection("message")
+          .add(newMessage.toMap());
+
+    } on FirebaseException catch (e) {
+      print("sendMessage Firebase error: ${e.code}");
+      rethrow;
+    } catch (e) {
+      print("sendMessage error: $e");
+      rethrow;
+    }
   }
 
-  Stream<QuerySnapshot> getMessages (String userId, otherUserId) {
-    List<String> ids = [userId, otherUserId];
-    ids.sort();
+  // ===================== GET MESSAGES =====================
+  Stream<QuerySnapshot> getMessages(String userId, String otherUserId) {
+    List<String> ids = [userId, otherUserId]..sort();
     String chatRoomId = ids.join("_");
 
     return _fireStore
@@ -52,5 +64,31 @@ class ChatService {
         .collection("message")
         .orderBy("timestamp", descending: false)
         .snapshots();
+  }
+
+  // ===================== DELETE MESSAGE =====================
+  Future<void> deleteMessage({
+    required String userId,
+    required String otherUserId,
+    required String messageId,
+  }) async {
+    try {
+      List<String> ids = [userId, otherUserId]..sort();
+      String chatRoomId = ids.join("_");
+
+      await _fireStore
+          .collection("chat_rooms")
+          .doc(chatRoomId)
+          .collection("message")
+          .doc(messageId)
+          .delete();
+
+    } on FirebaseException catch (e) {
+      print("deleteMessage Firebase error: ${e.code}");
+      rethrow;
+    } catch (e) {
+      print("deleteMessage error: $e");
+      rethrow;
+    }
   }
 }

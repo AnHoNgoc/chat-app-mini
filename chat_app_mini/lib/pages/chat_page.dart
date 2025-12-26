@@ -5,6 +5,8 @@ import 'package:chat_app_mini/services/chat_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import '../utils/confirmation_dialog.dart';
+import '../utils/show_snackbar.dart';
 
 class ChatPage extends StatefulWidget {
   final String receiverEmail;
@@ -34,12 +36,26 @@ class _ChatPageState extends State<ChatPage> {
     super.dispose();
   }
 
-  void sendMessage() async {
-    if (_messageController.text.isNotEmpty) {
+  bool _isSending = false;
+
+  Future<void> sendMessage() async {
+    if (_messageController.text.trim().isEmpty || _isSending) return;
+
+    setState(() => _isSending = true);
+
+    try {
       await _chatService.sendMessage(
-          widget.receiverId, _messageController.text);
+        widget.receiverId,
+        _messageController.text.trim(),
+      );
+
       _messageController.clear();
       _scrollToBottom();
+
+    } catch (e) {
+      showAppSnackBar(context, "Send message failed!", Colors.redAccent);
+    } finally {
+      setState(() => _isSending = false);
     }
   }
 
@@ -111,6 +127,7 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildMessageItem(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
     bool isCurrentUser =
         data['senderId'] == _authService.getCurrentUser()!.uid;
 
@@ -120,13 +137,49 @@ class _ChatPageState extends State<ChatPage> {
       child: ChatBubble(
         message: data["message"],
         isCurrentUser: isCurrentUser,
+        onLongPress: () async {
+          final confirm = await showConfirmationDialog(
+            context,
+            title: "Delete message",
+            message: "Are you sure you want to delete this message?",
+            confirmText: "Delete",
+            cancelText: "Cancel",
+          );
+
+          if (confirm == true) {
+            await _chatService.deleteMessage(
+              userId: _authService.getCurrentUser()!.uid,
+              otherUserId: widget.receiverId,
+              messageId: doc.id,
+            );
+          }
+        },
       ),
     );
   }
 
   Widget _buildUserInput() {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 50.h, left: 20.w, right: 10.w),
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: 10.h,
+        left: 10.w,
+        right: 10.w,
+        top: 10.h,
+      ),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.grey.shade900
+            : Colors.grey.shade100,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
           Expanded(
@@ -137,14 +190,23 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
           Container(
+            margin: EdgeInsets.only(left: 10.w),
             decoration: const BoxDecoration(
               color: Colors.green,
               shape: BoxShape.circle,
             ),
-            margin: EdgeInsets.only(left: 10.w),
             child: IconButton(
-              onPressed: sendMessage,
-              icon: Icon(
+              onPressed: _isSending ? null : sendMessage,
+              icon: _isSending
+                  ? SizedBox(
+                width: 18.sp,
+                height: 18.sp,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+                  : Icon(
                 Icons.arrow_upward,
                 color: Colors.white,
                 size: 22.sp,

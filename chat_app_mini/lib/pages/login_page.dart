@@ -3,9 +3,10 @@ import 'package:chat_app_mini/components/my_text_field.dart';
 import 'package:chat_app_mini/pages/register_page.dart';
 import 'package:chat_app_mini/utils/app_validator.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+import '../routes/app_routes.dart';
 import '../services/auth_service.dart';
 import '../utils/show_snackbar.dart';
-import 'home_page.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,7 +18,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final authService = AuthService();
+  final _authService = AuthService();
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -31,20 +32,11 @@ class _LoginPageState extends State<LoginPage> {
       String email = _emailController.text.trim();
       String password = _passwordController.text.trim();
 
-      String? result = await authService.loginUser({
-        'email': email,
-        'password': password,
-      });
+      String? result = await _authService.loginUser(email: email,password:password);
 
       setState(() => _isLoading = false);
 
-      if (result == null) {
-        showAppSnackBar(context, "Login successfully!", Colors.green);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => HomePage()),
-        );
-      } else {
+      if (result != null) {
         showAppSnackBar(context, result, Colors.red);
       }
     }
@@ -68,12 +60,13 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.message,
-                  size: 60.sp, // responsive icon size
-                  color: Theme.of(context).colorScheme.primary,
+                Lottie.asset(
+                  'assets/lottie/login.json',
+                  width: 250.sp,   // responsive size, giống Icon
+                  height: 250.sp,
+                  fit: BoxFit.contain,
                 ),
-                SizedBox(height: 50.h),
+                SizedBox(height: 20.h),
                 Text(
                   "Welcome Back, you've been missed!",
                   style: TextStyle(
@@ -96,7 +89,26 @@ class _LoginPageState extends State<LoginPage> {
                   controller: _passwordController,
                   validator: AppValidator.validatePassword,
                 ),
-                SizedBox(height: 25.h),
+                SizedBox(height: 12.h),
+                Padding(
+                  padding: EdgeInsets.only(right: 24.w),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(context, AppRoutes.resetPassword);
+                      },
+                      child: Text(
+                        "Forgot Password?",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
                 MyButton(
                   text: "Login",
                   onTap: _login,

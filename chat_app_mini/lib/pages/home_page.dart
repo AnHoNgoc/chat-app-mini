@@ -5,9 +5,9 @@ import 'package:chat_app_mini/services/auth_service.dart';
 import 'package:chat_app_mini/services/chat_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
+import '../routes/app_routes.dart';
 import '../utils/confirmation_dialog.dart';
-import 'login_page.dart';
+
 
 class HomePage extends StatelessWidget {
   HomePage({super.key});
@@ -25,10 +25,10 @@ class HomePage extends StatelessWidget {
     );
     if (confirm == true) {
       await _authService.logout();
-      Navigator.pushAndRemoveUntil(
+      Navigator.pushNamedAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-            (route) => false,
+        AppRoutes.login,
+            (_) => false,
       );
     }
   }
@@ -62,8 +62,10 @@ class HomePage extends StatelessWidget {
             return const Text("Error");
           }
 
-          if (snapshot.connectionState == ConnectionState.waiting){
-            return const Text("Loading..");
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
           }
           return Padding(
             padding: EdgeInsets.only(top: 20.h),// cách trên 16px

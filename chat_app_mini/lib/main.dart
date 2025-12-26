@@ -1,11 +1,15 @@
 import 'package:chat_app_mini/pages/auth_page.dart';
+import 'package:chat_app_mini/services/notification_service.dart';
 import 'package:chat_app_mini/themes/theme_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
+import 'api/firebase_api.dart';
 import 'firebase_options.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +22,11 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  await NotificationService.initialize();
+
+  await FirebaseApi.instance.initNotifications();
+
   runApp(
     ChangeNotifierProvider(
         create: (context) => ThemeProvider(),

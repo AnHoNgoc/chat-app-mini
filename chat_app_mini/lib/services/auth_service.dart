@@ -1,26 +1,36 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../api/firebase_api.dart';
+import 'notification_service.dart';
+
 class AuthService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _fireStore = FirebaseFirestore.instance;
+  final _notificationService =  NotificationService();
 
   User? getCurrentUser() {
     return _auth.currentUser;
   }
 
-  Future<String?> createUser(Map<String, dynamic> data) async {
+  Future<String?> createUser({
+    required String email,
+    required String password,
+  }) async {
     try {
-
       final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: data["email"],
-        password: data["password"],
+        email: email,
+        password: password,
       );
-      final uid = userCredential.user!.uid;
 
-      await _fireStore.collection('users').doc(uid).set({
-        'email': data['email'],
+      final user = userCredential.user;
+      if (user == null) {
+        return 'User creation failed';
+      }
+
+      await _fireStore.collection('users').doc(user.uid).set({
+        'email': email,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
@@ -31,16 +41,36 @@ class AuthService {
       }
       return 'Registration failed. Please try again.';
     } catch (e) {
-      return 'An error occurred. Please try again.';
+      return 'An unexpected error occurred. Please try again.';
     }
   }
 
-  Future<String?> loginUser(Map<String, dynamic> data) async {
+  Future<String?> loginUser({
+    required String email,
+    required String password,
+  }) async {
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: data["email"],
-        password: data["password"],
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
       );
+
+      final uid = userCredential.user!.uid;
+      final doc = await _fireStore.collection('users').doc(uid).get();
+
+      if (!doc.exists) {
+        await _auth.signOut();
+        return "User record not found.";
+      }
+
+      final token = FirebaseApi.instance.fcmToken;
+      if (token != null) {
+        print('💾 Lưu token sau khi login: $token');
+        await _notificationService.saveFcmToken(token);
+      } else {
+        print('⚠️ Chưa có FCM token, sẽ lưu khi FirebaseMessaging.onTokenRefresh chạy');
+      }
+
       return null; // Success
     } on FirebaseAuthException catch (_) {
       return 'Invalid email or password.';
@@ -87,8 +117,45 @@ class AuthService {
           return "Password change failed. Please try again.";
       }
     } catch (e) {
-      // debugPrint('changePassword unknown error: $e');
       return "An error occurred. Please try again.";
+    }
+  }
+
+  Future<String?> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        return 'No user found with this email.';
+      }
+      return 'Failed to send reset email. Please try again.';
+    } catch (_) {
+      return 'An error occurred. Please try again.';
+    }
+  }
+
+  Future<bool> deleteUser({String? password}) async {
+    User? user = _auth.currentUser;
+    if (user == null) return false;
+
+    try {
+      await _fireStore.collection('users').doc(user.uid).delete();
+      await user.delete();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        if (password == null || user.email == null) return false;
+
+        AuthCredential credential =
+        EmailAuthProvider.credential(email: user.email!, password: password);
+        await user.reauthenticateWithCredential(credential);
+
+        await _fireStore.collection('users').doc(user.uid).delete();
+        await user.delete();
+        return true;
+      }
+      return false;
     }
   }
 
